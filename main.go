@@ -3,13 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"restapi/otherfns"
 
 	"github.com/gorilla/mux"
 )
 
+// Book represents a book object with title, author, and ISBN fields
 type Book struct {
 	ID     string `json:"id,omitempty"`
 	Title  string `json:"title,omitempty"`
@@ -17,37 +16,16 @@ type Book struct {
 	ISBN   string `json:"isbn,omitempty"`
 }
 
+// books is an in-memory collection of books
 var books []Book
-
-func main() {
-	// Initialize router
-	router := mux.NewRouter()
-
-	// Add some sample data
-	books = append(books, Book{ID: "1", Title: "Book One", Author: "Author One", ISBN: "12345"})
-	books = append(books, Book{ID: "2", Title: "Book Two", Author: "Author Two", ISBN: "67890"})
-
-	// Define routes
-	router.HandleFunc("/books", getBooks).Methods("GET")
-	router.HandleFunc("/books/{id}", getBook).Methods("GET")
-	router.HandleFunc("/books", createBook).Methods("POST")
-	router.HandleFunc("/books/{id}", updateBook).Methods("PUT")
-	router.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
-
-	// Start server
-	log.Fatal(http.ListenAndServe(":8000", router))
-}
 
 // Get all books
 func getBooks(w http.ResponseWriter, r *http.Request) {
-	otherfns.HelloHandler()
 	json.NewEncoder(w).Encode(books)
 }
 
-// Get single book by ID
+// Get a book by ID
 func getBook(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("getBook() called")
-
 	params := mux.Vars(r)
 	for _, book := range books {
 		if book.ID == params["id"] {
@@ -55,34 +33,50 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	json.NewEncoder(w).Encode(nil)
+	json.NewEncoder(w).Encode(&Book{})
 }
 
 // Create a new book
 func createBook(w http.ResponseWriter, r *http.Request) {
 	var book Book
-	json.NewDecoder(r.Body).Decode(&book)
+	err := json.NewDecoder(r.Body).Decode(&book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Validate required fields
+	if book.Title == "" || book.Author == "" || book.ISBN == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+	book.ID = fmt.Sprintf("%d", len(books)+1)
 	books = append(books, book)
 	json.NewEncoder(w).Encode(book)
 }
 
-// Update an existing book by ID
+// Update an existing book
 func updateBook(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	for i, book := range books {
-		if book.ID == params["id"] {
-			books[i] = Book{
-				ID:     book.ID,
-				Title:  book.Title,
-				Author: book.Author,
-				ISBN:   book.ISBN,
-			}
-			json.NewDecoder(r.Body).Decode(&books[i])
-			json.NewEncoder(w).Encode(books[i])
+	var book Book
+	err := json.NewDecoder(r.Body).Decode(&book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Validate required fields
+	if book.Title == "" || book.Author == "" || book.ISBN == "" {
+		http.Error(w, "Missing required fields", http.StatusBadRequest)
+		return
+	}
+	for i, b := range books {
+		if b.ID == params["id"] {
+			book.ID = b.ID
+			books[i] = book
+			json.NewEncoder(w).Encode(book)
 			return
 		}
 	}
-	json.NewEncoder(w).Encode(nil)
+	http.Error(w, "Book not found", http.StatusNotFound)
 }
 
 // Delete a book by ID
@@ -95,4 +89,24 @@ func deleteBook(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	json.NewEncoder(w).Encode(books)
+}
+
+func main() {
+	// Initialize router
+	r := mux.NewRouter()
+
+	// Mock data
+	books = append(books, Book{ID: "1", Title: "To Kill a Mockingbird", Author: "Harper Lee", ISBN: "9780061120084"})
+	books = append(books, Book{ID: "2", Title: "1984", Author: "George Orwell", ISBN: "9780451524935"})
+	books = append(books, Book{ID: "3", Title: "Brave New World", Author: "Aldous Huxley", ISBN: "9780060850524"})
+
+	// Route handlers
+	r.HandleFunc("/books", getBooks).Methods("GET")
+	r.HandleFunc("/books/{id}", getBook).Methods("GET")
+	r.HandleFunc("/books", createBook).Methods("POST")
+	r.HandleFunc("/books/{id}", updateBook).Methods("PUT")
+	r.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
+
+	// Start server
+	http.ListenAndServe(":8000", r)
 }
