@@ -117,6 +117,8 @@ func main() {
 
 	// Route handlers
 	r.HandleFunc("/books", middleware.Logging(getBooks)).Methods("GET")
+	// use middleware wrapper
+	r.HandleFunc("/books-wrapper", middleware.Wrapper(getBooks, middleware.Method("GET")))
 	r.HandleFunc("/books/{id}", middleware.Logging(getBook)).Methods("GET")
 	r.HandleFunc("/books", createBook).Methods("POST")
 	r.HandleFunc("/books/{id}", updateBook).Methods("PUT")
