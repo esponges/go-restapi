@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"restapi/auth"
 	"restapi/middleware"
 	"strconv"
 
@@ -123,6 +124,10 @@ func main() {
 	r.HandleFunc("/books", createBook).Methods("POST")
 	r.HandleFunc("/books/{id}", updateBook).Methods("PUT")
 	r.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
+	// auth routes
+	r.HandleFunc("/login", auth.Login)
+	r.HandleFunc("/logout", auth.Logout)
+	r.HandleFunc("/secret-msg", auth.Secret)
 
 	// Start server
 	http.ListenAndServe(":8000", r)
