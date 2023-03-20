@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"restapi/middleware"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -115,8 +116,8 @@ func main() {
 	books = append(books, Book{ID: 3, Title: "Brave New World", Author: "Aldous Huxley"})
 
 	// Route handlers
-	r.HandleFunc("/books", getBooks).Methods("GET")
-	r.HandleFunc("/books/{id}", getBook).Methods("GET")
+	r.HandleFunc("/books", middleware.Logging(getBooks)).Methods("GET")
+	r.HandleFunc("/books/{id}", middleware.Logging(getBook)).Methods("GET")
 	r.HandleFunc("/books", createBook).Methods("POST")
 	r.HandleFunc("/books/{id}", updateBook).Methods("PUT")
 	r.HandleFunc("/books/{id}", deleteBook).Methods("DELETE")
