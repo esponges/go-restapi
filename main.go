@@ -128,6 +128,8 @@ func main() {
 	r.HandleFunc("/login", auth.Login)
 	r.HandleFunc("/logout", auth.Logout)
 	r.HandleFunc("/secret-msg", auth.Secret)
+	// hashpw
+	r.HandleFunc("/hashpw/{pw}", auth.HashPasswordHandler).Methods("GET")
 
 	// Start server
 	http.ListenAndServe(":8000", r)

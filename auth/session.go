@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var (
@@ -37,4 +39,36 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 	session.Values["authenticated"] = false
 	session.Save(r, w)
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func CheckPasswordMatch(password string) {
+	hashed, err := HashPassword(password)
+	if err != nil {
+		fmt.Println("you did something wrong dude")
+	}
+
+	match := CheckPasswordHash(password, hashed)
+
+	if !match {
+		fmt.Println("Something wrong hashing")
+	}
+	fmt.Printf("Success hashing pw " + password + "to " + hashed)
+}
+
+func HashPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	pw := params["pw"]
+	fmt.Printf("handler")
+
+	CheckPasswordMatch(pw)
 }
